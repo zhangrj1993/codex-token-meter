@@ -23,9 +23,11 @@ function Format-CompactStats($stats) {
   $cachedTokens = [double]$stats.summary.cached
 
   $tokenText = if ($tokens -ge 100000000) {
-    "{0:N1}亿" -f ($tokens / 100000000)
+    "{0:N1}B" -f ($tokens / 1000000000)
+  } elseif ($tokens -ge 1000000) {
+    "{0:N1}M" -f ($tokens / 1000000)
   } elseif ($tokens -ge 10000) {
-    "{0:N1}万" -f ($tokens / 10000)
+    "{0:N1}K" -f ($tokens / 1000)
   } else {
     "{0:N0}" -f $tokens
   }
@@ -37,9 +39,9 @@ function Format-CompactStats($stats) {
   }
 
   return [PSCustomObject]@{
-    Line1 = "今日 $tokenText token"
-    Line2 = ("API估算 $" + ("{0:N2}" -f $cost) + "  缓存 $cachePct")
-    Tooltip = ("Codex Token Meter`n今日 token: $($stats.summary.total.ToString('N0'))`n输入: $($stats.summary.input.ToString('N0'))`n缓存输入: $($stats.summary.cached.ToString('N0'))`n输出: $($stats.summary.output.ToString('N0'))`nAPI估算: $" + ("{0:N4}" -f $cost))
+    Line1 = "Today $tokenText tokens"
+    Line2 = ("API est. $" + ("{0:N2}" -f $cost) + "  cache $cachePct")
+    Tooltip = ("Codex Token Meter`nToday tokens: $($stats.summary.total.ToString('N0'))`nInput: $($stats.summary.input.ToString('N0'))`nCached input: $($stats.summary.cached.ToString('N0'))`nOutput: $($stats.summary.output.ToString('N0'))`nAPI estimate: $" + ("{0:N4}" -f $cost))
   }
 }
 
@@ -108,10 +110,10 @@ $notify.Icon = [System.Drawing.SystemIcons]::Information
 $notify.Visible = $true
 
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
-$refreshItem = $menu.Items.Add("刷新")
-$openItem = $menu.Items.Add("打开中文报表")
-$hideItem = $menu.Items.Add("显示/隐藏")
-$exitItem = $menu.Items.Add("退出")
+$refreshItem = $menu.Items.Add("Refresh")
+$openItem = $menu.Items.Add("Open Dashboard")
+$hideItem = $menu.Items.Add("Show / Hide")
+$exitItem = $menu.Items.Add("Exit")
 $notify.ContextMenuStrip = $menu
 $form.ContextMenuStrip = $menu
 $panel.ContextMenuStrip = $menu
@@ -123,7 +125,7 @@ function Open-Report {
     Refresh-Report
     Start-Process $ReportPath
   } catch {
-    [System.Windows.Forms.MessageBox]::Show("生成报表失败：$($_.Exception.Message)", "Codex Token Meter")
+    [System.Windows.Forms.MessageBox]::Show("Failed to generate report: $($_.Exception.Message)", "Codex Token Meter")
   }
 }
 
@@ -141,9 +143,9 @@ function Update-Widget {
     $label2.Text = $compact.Line2
     $notify.Text = ($compact.Tooltip.Substring(0, [Math]::Min(63, $compact.Tooltip.Length)))
   } catch {
-    $label1.Text = "Token 统计失败"
-    $label2.Text = "右键刷新或打开报表"
-    $notify.Text = "Codex Token Meter: 统计失败"
+    $label1.Text = "Token report failed"
+    $label2.Text = "Right-click to refresh"
+    $notify.Text = "Codex Token Meter: report failed"
   }
 }
 

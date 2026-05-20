@@ -1,86 +1,89 @@
 # Codex Token Meter
 
-一个本地 Codex token 统计小工具。
+A local token usage dashboard and status widget for Codex.
 
-它读取本机 Codex rollout 文件，生成中文统计页面，也可以显示一个右下角小窗，方便随时看今天 token 和 API 口径估算费用。
+Codex Token Meter reads local Codex rollout files, summarizes token usage, generates an HTML dashboard, and can show a small always-on-top Windows status widget with today's token count and estimated API-style cost.
 
-## 功能
+## Features
 
-- 今日 token 汇总
-- 历史每日汇总
-- 对话累计排行
-- 今日对话消耗排行
-- cached input / non-cached input / output / reasoning 拆分
-- GPT-5.5 API 口径费用估算
-- 中文 HTML 仪表盘
-- Windows 右下角置顶小窗
+- Today's token usage summary
+- Historical daily usage summary
+- Cumulative conversation ranking
+- Today's conversation usage ranking
+- Input / cached input / non-cached input / output / reasoning breakdown
+- GPT-5.5 API-style cost estimate
+- HTML dashboard
+- Windows floating status widget
 
-## 数据来源
+## Data Source
 
-默认读取：
+By default, the tool reads:
 
 ```text
 %USERPROFILE%\.codex\sessions\...\rollout-*.jsonl
 ```
 
-工具只读本地文件，不修改 Codex 状态。
+The tool is read-only. It does not modify Codex state.
 
-## 使用方式
+## Requirements
 
-需要先安装 Node.js。
+- Node.js
+- Windows PowerShell for the floating status widget
 
-生成中文仪表盘：
+## Usage
+
+Generate the HTML dashboard:
 
 ```powershell
 node .\scripts\token-meter.mjs --cost --top 20 --html "$env:USERPROFILE\Desktop\CodexTokenDashboard.html"
 ```
 
-或者直接双击：
+Or double-click:
 
 ```text
 CodexTokenDashboard.cmd
 ```
 
-启动右下角小窗：
+Start the floating status widget:
 
 ```text
 CodexTokenStatusWidget.cmd
 ```
 
-小窗支持：
+Widget actions:
 
-- 右键：刷新 / 打开中文报表 / 显示隐藏 / 退出
-- 双击：刷新并打开中文报表
+- Right-click: refresh / open dashboard / show or hide / exit
+- Double-click: refresh and open dashboard
 
-## 命令行示例
+## CLI Examples
 
-统计今天：
+Report today's usage:
 
 ```powershell
 node .\scripts\token-meter.mjs --cost
 ```
 
-统计指定日期：
+Report a specific date:
 
 ```powershell
 node .\scripts\token-meter.mjs --date 2026-05-19 --cost
 ```
 
-查看所有对话累计排行：
+Show cumulative conversation ranking:
 
 ```powershell
 node .\scripts\token-meter.mjs --all --top 10
 ```
 
-输出 JSON：
+Output JSON:
 
 ```powershell
 node .\scripts\token-meter.mjs --json --cost
 ```
 
-## 当前计价口径
+## Pricing Assumption
 
-当前按 GPT-5.5 截图口径估算：
+The current cost estimate uses this GPT-5.5 pricing assumption:
 
 ```text
 input: $5 / 1M tokens
@@ -88,22 +91,22 @@ cached input: $5 / 1M tokens
 output: $30 / 1M tokens
 ```
 
-截图没有单独显示 cached input 折扣，所以 cached input 暂按普通 input 价格估算。
+Cached input is currently estimated at the normal input price because the referenced pricing screenshot did not show a separate cached-input discount.
 
-注意：这是 API 口径估算，不代表 ChatGPT Plus 实际扣费。
+This is only an API-style estimate. It does not mean ChatGPT Plus charged this amount.
 
-## 隐私说明
+## Privacy
 
-这个工具不会上传任何数据。
+Codex Token Meter does not upload any data.
 
-它只在本机读取 Codex 的 rollout 文件，并在本机生成 HTML 报表。请不要把自己的 `.codex` 目录、rollout 文件、`auth.json` 或备份目录提交到 GitHub。
+It only reads local rollout files and generates local reports. Do not commit your `.codex` directory, rollout files, `auth.json`, SQLite databases, or backups to GitHub.
 
-## 文件说明
+## Files
 
 ```text
-scripts/token-meter.mjs        核心统计脚本
-CodexTokenDashboard.cmd        生成并打开中文 HTML 仪表盘
-CodexTokenStatusWidget.ps1     右下角小窗
-CodexTokenStatusWidget.cmd     启动右下角小窗
-skills/token-meter/SKILL.md    Codex skill 说明
+scripts/token-meter.mjs        Core reporting script
+CodexTokenDashboard.cmd        Generate and open the HTML dashboard
+CodexTokenStatusWidget.ps1     Floating Windows status widget
+CodexTokenStatusWidget.cmd     Start the floating widget
+skills/token-meter/SKILL.md    Codex skill notes
 ```

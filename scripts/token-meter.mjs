@@ -445,7 +445,7 @@ function makeHtmlDashboard(result, args) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Codex Token 中文统计</title>
+  <title>Codex Token Dashboard</title>
   <style>
     :root {
       color-scheme: light;
@@ -512,53 +512,53 @@ function makeHtmlDashboard(result, args) {
   <main>
     <header>
       <div>
-        <h1>Codex Token 中文统计</h1>
-        <p>读取本机 rollout 文件生成，只做统计，不修改 Codex 状态。费用按 ${DEFAULT_PRICES.modelName} API 口径估算，不代表 Plus 实际扣费。</p>
+        <h1>Codex Token Dashboard</h1>
+        <p>Generated from local Codex rollout files. This report is read-only and does not modify Codex state. Cost is an API-style estimate for ${DEFAULT_PRICES.modelName}, not an actual ChatGPT Plus charge.</p>
       </div>
-      <div class="pill">生成时间：${escapeHtml(generatedAt)}</div>
+      <div class="pill">Generated: ${escapeHtml(generatedAt)}</div>
     </header>
 
     <div class="grid">
-      ${metric("今日总 token", formatNumber(todayUsage.total), `${args.date} · ${todayRows.length} 个对话`)}
-      ${metric("今日缓存输入", formatNumber(todayUsage.cached), `缓存占输入 ${pct(todayUsage.cached, todayUsage.input)}`)}
-      ${metric("今日非缓存输入", formatNumber(todayUsage.nonCached), "这部分按标准输入价估算")}
-      ${metric("今日 API 估算", formatMoney(todayCost.total), `按 ${DEFAULT_PRICES.modelName}: 输入 ${formatMoney(todayCost.input)} · 缓存 ${formatMoney(todayCost.cached)} · 输出 ${formatMoney(todayCost.output)}`)}
+      ${metric("Today's Tokens", formatNumber(todayUsage.total), `${args.date} · ${todayRows.length} conversations`)}
+      ${metric("Today's Cached Input", formatNumber(todayUsage.cached), `Cache share ${pct(todayUsage.cached, todayUsage.input)}`)}
+      ${metric("Today's Non-Cached Input", formatNumber(todayUsage.nonCached), "Estimated at the standard input price")}
+      ${metric("Today's API Estimate", formatMoney(todayCost.total), `${DEFAULT_PRICES.modelName}: input ${formatMoney(todayCost.input)} · cached ${formatMoney(todayCost.cached)} · output ${formatMoney(todayCost.output)}`)}
     </div>
 
     <div class="grid">
-      ${metric("历史累计 token", formatNumber(allUsage.total), `${allRows.length} 个 rollout`)}
-      ${metric("历史累计缓存输入", formatNumber(allUsage.cached), `缓存占输入 ${pct(allUsage.cached, allUsage.input)}`)}
-      ${metric("历史累计输出", formatNumber(allUsage.output), `reasoning ${formatNumber(allUsage.reasoning)}`)}
-      ${metric("历史 API 估算", formatMoney(allCost.total), `按 ${DEFAULT_PRICES.modelName} 单价，仅供理解 API 成本`)}
+      ${metric("Lifetime Tokens", formatNumber(allUsage.total), `${allRows.length} rollouts`)}
+      ${metric("Lifetime Cached Input", formatNumber(allUsage.cached), `Cache share ${pct(allUsage.cached, allUsage.input)}`)}
+      ${metric("Lifetime Output", formatNumber(allUsage.output), `reasoning ${formatNumber(allUsage.reasoning)}`)}
+      ${metric("Lifetime API Estimate", formatMoney(allCost.total), `${DEFAULT_PRICES.modelName} pricing assumption`)}
     </div>
 
     <section class="panel">
       <div class="panel-head">
-        <h2>今日对话消耗排行</h2>
-        <span class="note">按今日新增 total tokens 排序</span>
+        <h2>Today's Conversation Ranking</h2>
+        <span class="note">Sorted by today's added total tokens</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>排名</th><th>对话 ID</th><th>工作目录</th><th>总 token</th><th>输入</th><th>缓存输入</th><th>非缓存输入</th><th>输出</th><th>推理输出</th>
+              <th>Rank</th><th>Thread ID</th><th>Workspace</th><th>Total tokens</th><th>Input</th><th>Cached input</th><th>Non-cached input</th><th>Output</th><th>Reasoning output</th>
             </tr>
           </thead>
-          <tbody>${todayConversationRows || `<tr><td colspan="9">今天还没有可计算的 token 增量。</td></tr>`}</tbody>
+          <tbody>${todayConversationRows || `<tr><td colspan="9">No measurable token delta for today yet.</td></tr>`}</tbody>
         </table>
       </div>
     </section>
 
     <section class="panel">
       <div class="panel-head">
-        <h2>历史每日汇总</h2>
-        <span class="note">按日期倒序，基于每天开始前后的 token_count 差值</span>
+        <h2>Historical Daily Summary</h2>
+        <span class="note">Reverse chronological order, based on token_count deltas around each local day</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>日期</th><th>强度</th><th>总 token</th><th>缓存输入</th><th>非缓存输入</th><th>输出</th><th>API 估算</th><th>对话数</th>
+              <th>Date</th><th>Bar</th><th>Total tokens</th><th>Cached input</th><th>Non-cached input</th><th>Output</th><th>API estimate</th><th>Threads</th>
             </tr>
           </thead>
           <tbody>${historyRows}</tbody>
@@ -568,14 +568,14 @@ function makeHtmlDashboard(result, args) {
 
     <section class="panel">
       <div class="panel-head">
-        <h2>对话累计排行</h2>
-        <span class="note">按每个 rollout 最新累计 total tokens 排序</span>
+        <h2>Cumulative Conversation Ranking</h2>
+        <span class="note">Sorted by each rollout's latest cumulative total tokens</span>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>排名</th><th>对话 ID</th><th>工作目录</th><th>累计 token</th><th>今日新增</th><th>累计缓存输入</th><th>累计输出</th><th>最后活跃</th>
+              <th>Rank</th><th>Thread ID</th><th>Workspace</th><th>Cumulative tokens</th><th>Added today</th><th>Cumulative cached input</th><th>Cumulative output</th><th>Last active</th>
             </tr>
           </thead>
           <tbody>${conversationRows}</tbody>
@@ -584,8 +584,8 @@ function makeHtmlDashboard(result, args) {
     </section>
 
     <section class="panel">
-      <h2>说明</h2>
-      <p class="note">当前单价按截图口径设置：输入 $5 / 100万 token，输出 $30 / 100万 token；截图没有单独显示 cached input 折扣，所以缓存输入暂按输入价估算。Plus 会员不会因为这里的 API 估算额外扣费。长对话会让今日 token 快速增加，建议超过几百万 token 后做交接摘要并新开对话。</p>
+      <h2>Notes</h2>
+      <p class="note">Current pricing assumption: input $5 / 1M tokens, output $30 / 1M tokens. The referenced screenshot did not show a separate cached-input discount, so cached input is estimated at the normal input price. ChatGPT Plus is not charged from this estimate. Very long conversations can grow token usage quickly; consider creating a handoff summary and starting a new thread after several million tokens.</p>
     </section>
   </main>
 </body>
