@@ -57,8 +57,10 @@ function Format-CompactStats($stats) {
   }
 
   return [PSCustomObject]@{
-    Line1 = "Today $tokenText tokens"
-    Line2 = "$primaryText  $secondaryText"
+    Line1 = "Today $tokenText TOKEN"
+    Line2 = ("Amount $" + ("{0:N2}" -f $cost))
+    Line3 = $primaryText
+    Line4 = $secondaryText
     Tooltip = ("Codex Token Meter`nRemaining quota: $primaryText / $secondaryText`nToday tokens: $($stats.summary.total.ToString('N0'))`nInput: $($stats.summary.input.ToString('N0'))`nCached input: $($stats.summary.cached.ToString('N0'))`nOutput: $($stats.summary.output.ToString('N0'))`nAPI estimate: $" + ("{0:N4}" -f $cost) + "`nCache share: $cachePct")
   }
 }
@@ -93,8 +95,8 @@ $form.TopMost = $true
 $form.StartPosition = [System.Windows.Forms.FormStartPosition]::Manual
 $form.BackColor = [System.Drawing.Color]::FromArgb(34, 34, 38)
 $form.ForeColor = [System.Drawing.Color]::White
-$form.Width = 230
-$form.Height = 54
+$form.Width = 188
+$form.Height = 96
 $form.Opacity = 0.94
 
 $panel = New-Object System.Windows.Forms.Panel
@@ -106,7 +108,7 @@ $label1 = New-Object System.Windows.Forms.Label
 $label1.AutoSize = $false
 $label1.Left = 12
 $label1.Top = 7
-$label1.Width = 205
+$label1.Width = 166
 $label1.Height = 20
 $label1.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 10, [System.Drawing.FontStyle]::Bold)
 $label1.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 255)
@@ -116,11 +118,31 @@ $label2 = New-Object System.Windows.Forms.Label
 $label2.AutoSize = $false
 $label2.Left = 12
 $label2.Top = 29
-$label2.Width = 205
+$label2.Width = 166
 $label2.Height = 18
 $label2.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 8.5, [System.Drawing.FontStyle]::Regular)
 $label2.ForeColor = [System.Drawing.Color]::FromArgb(212, 220, 230)
 $panel.Controls.Add($label2)
+
+$label3 = New-Object System.Windows.Forms.Label
+$label3.AutoSize = $false
+$label3.Left = 12
+$label3.Top = 50
+$label3.Width = 166
+$label3.Height = 18
+$label3.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 8.5, [System.Drawing.FontStyle]::Regular)
+$label3.ForeColor = [System.Drawing.Color]::FromArgb(212, 220, 230)
+$panel.Controls.Add($label3)
+
+$label4 = New-Object System.Windows.Forms.Label
+$label4.AutoSize = $false
+$label4.Left = 12
+$label4.Top = 71
+$label4.Width = 166
+$label4.Height = 18
+$label4.Font = New-Object System.Drawing.Font("Microsoft YaHei UI", 8.5, [System.Drawing.FontStyle]::Regular)
+$label4.ForeColor = [System.Drawing.Color]::FromArgb(212, 220, 230)
+$panel.Controls.Add($label4)
 
 $notify = New-Object System.Windows.Forms.NotifyIcon
 $notify.Text = "Codex Token Meter"
@@ -137,6 +159,8 @@ $form.ContextMenuStrip = $menu
 $panel.ContextMenuStrip = $menu
 $label1.ContextMenuStrip = $menu
 $label2.ContextMenuStrip = $menu
+$label3.ContextMenuStrip = $menu
+$label4.ContextMenuStrip = $menu
 
 function Open-Report {
   try {
@@ -159,10 +183,14 @@ function Update-Widget {
     $compact = Format-CompactStats $stats
     $label1.Text = $compact.Line1
     $label2.Text = $compact.Line2
+    $label3.Text = $compact.Line3
+    $label4.Text = $compact.Line4
     $notify.Text = ($compact.Tooltip.Substring(0, [Math]::Min(63, $compact.Tooltip.Length)))
   } catch {
     $label1.Text = "Token report failed"
     $label2.Text = "Right-click to refresh"
+    $label3.Text = ""
+    $label4.Text = ""
     $notify.Text = "Codex Token Meter: report failed"
   }
 }
@@ -197,6 +225,14 @@ $label1.Add_DoubleClick({
 })
 
 $label2.Add_DoubleClick({
+  Open-Report
+})
+
+$label3.Add_DoubleClick({
+  Open-Report
+})
+
+$label4.Add_DoubleClick({
   Open-Report
 })
 
