@@ -1,0 +1,16 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+*.tmp
+*.bak
+CodexTokenDashboard.html
+codex-token-report.md
+.codex/
+auth.json
+sessions/
+archived_sessions/
+backups_state/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

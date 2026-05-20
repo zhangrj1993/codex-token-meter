@@ -1,0 +1,20 @@
+{
+  "name": "codex-token-meter",
+  "version": "0.1.0",
+  "description": "Local Codex token usage dashboard and status widget.",
+  "type": "module",
+  "bin": {
+    "codex-token-meter": "./scripts/token-meter.mjs"
+  },
+  "scripts": {
+    "report": "node ./scripts/token-meter.mjs --cost",
+    "dashboard": "node ./scripts/token-meter.mjs --cost --top 20 --html ./CodexTokenDashboard.html"
+  },
+  "keywords": [
+    "codex",
+    "tokens",
+    "usage",
+    "dashboard"
+  ],
+  "license": "MIT"
+}
