@@ -125,6 +125,7 @@ function parseRollout(file, targetDate) {
   const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean);
   let meta = null;
   let latest = null;
+  let latestRateLimits = null;
   const events = [];
   const range = localDayRange(targetDate);
 
@@ -141,6 +142,10 @@ function parseRollout(file, targetDate) {
         forkedFromId: obj.payload.forked_from_id ?? "",
       };
       continue;
+    }
+
+    if (obj.type === "event_msg" && obj.payload?.type === "token_count" && obj.payload?.rate_limits) {
+      latestRateLimits = normalizeRateLimits(obj.payload.rate_limits, obj.timestamp);
     }
 
     const usage = obj?.payload?.info?.total_token_usage;
@@ -180,6 +185,7 @@ function parseRollout(file, targetDate) {
     dayEvents: dayEvents.length,
     delta,
     dailyDeltas,
+    rateLimits: latestRateLimits,
     latest: {
       input: latest.input,
       cached: latest.cached,
@@ -188,6 +194,25 @@ function parseRollout(file, targetDate) {
       reasoning: latest.reasoning,
       total: latest.total,
     },
+  };
+}
+
+function normalizeRateLimits(rateLimits, timestamp) {
+  const normalizeWindow = (value) => {
+    if (!value) return null;
+    return {
+      usedPercent: Number(value.used_percent ?? 0),
+      windowMinutes: Number(value.window_minutes ?? 0),
+      resetsAt: value.resets_at ? new Date(Number(value.resets_at) * 1000).toISOString() : null,
+    };
+  };
+
+  return {
+    updatedAt: timestamp ? new Date(timestamp).toISOString() : null,
+    planType: rateLimits.plan_type ?? null,
+    reachedType: rateLimits.rate_limit_reached_type ?? null,
+    primary: normalizeWindow(rateLimits.primary),
+    secondary: normalizeWindow(rateLimits.secondary),
   };
 }
 
@@ -332,9 +357,17 @@ function makeJson(result, args) {
     date: args.all ? null : args.date,
     rollouts: result.rollouts,
     summary: result.summary,
+    rateLimits: result.rateLimits,
     estimatedCost: args.cost ? estimateCost(result.summary) : null,
     rows: result.rows.slice(0, args.top),
   }, null, 2);
+}
+
+function latestRateLimits(rows) {
+  return rows
+    .map((row) => row.rateLimits)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.updatedAt ?? 0) - new Date(a.updatedAt ?? 0))[0] ?? null;
 }
 
 function addUsage(target, usage) {
@@ -380,6 +413,7 @@ function makeHtmlDashboard(result, args) {
   const allUsage = aggregate(allRows, "latest");
   const todayCost = estimateCost(todayUsage);
   const allCost = estimateCost(allUsage);
+  const limits = result.rateLimits;
   const maxDayTotal = Math.max(...history.map((day) => day.usage.total), 1);
   const generatedAt = new Date().toLocaleString();
 
@@ -397,6 +431,13 @@ function makeHtmlDashboard(result, args) {
     <td>${formatNumber(usage.nonCached)}</td>
     <td>${formatNumber(usage.output)}</td>
     <td>${formatNumber(usage.reasoning)}</td>`;
+
+  const limitCard = (label, limit) => {
+    const used = Number(limit?.usedPercent ?? 0);
+    const remaining = Math.max(0, 100 - used);
+    const reset = limit?.resetsAt ? new Date(limit.resetsAt).toLocaleString() : "unknown";
+    return metric(label, `${remaining.toFixed(0)}%`, `Used ${used.toFixed(0)}% · Reset: ${reset}`);
+  };
 
   const conversationRows = allRows.slice(0, args.top).map((row, index) => {
     const latest = row.latest;
@@ -526,6 +567,13 @@ function makeHtmlDashboard(result, args) {
     </div>
 
     <div class="grid">
+      ${limitCard("5-Hour Remaining Quota", limits?.primary)}
+      ${limitCard("Weekly Remaining Quota", limits?.secondary)}
+      ${metric("Plan Type", limits?.planType ?? "unknown", limits?.updatedAt ? `Updated: ${new Date(limits.updatedAt).toLocaleString()}` : "No quota data yet")}
+      ${metric("Limit Status", limits?.reachedType ?? "Not reached", "From Codex rate_limits")}
+    </div>
+
+    <div class="grid">
       ${metric("Lifetime Tokens", formatNumber(allUsage.total), `${allRows.length} rollouts`)}
       ${metric("Lifetime Cached Input", formatNumber(allUsage.cached), `Cache share ${pct(allUsage.cached, allUsage.input)}`)}
       ${metric("Lifetime Output", formatNumber(allUsage.output), `reasoning ${formatNumber(allUsage.reasoning)}`)}
@@ -585,7 +633,7 @@ function makeHtmlDashboard(result, args) {
 
     <section class="panel">
       <h2>Notes</h2>
-      <p class="note">Current pricing assumption: input $5 / 1M tokens, output $30 / 1M tokens. The referenced screenshot did not show a separate cached-input discount, so cached input is estimated at the normal input price. ChatGPT Plus is not charged from this estimate. Very long conversations can grow token usage quickly; consider creating a handoff summary and starting a new thread after several million tokens.</p>
+      <p class="note">Quota cards show remaining percentage, converted from Codex's used_percent field. Current pricing assumption: input $5 / 1M tokens, output $30 / 1M tokens. The referenced screenshot did not show a separate cached-input discount, so cached input is estimated at the normal input price. ChatGPT Plus is not charged from this estimate. Very long conversations can grow token usage quickly; consider creating a handoff summary and starting a new thread after several million tokens.</p>
     </section>
   </main>
 </body>
@@ -612,6 +660,7 @@ function main() {
     summary,
     rows,
     allRows: parsed,
+    rateLimits: latestRateLimits(parsed),
   };
 
   const output = args.json ? makeJson(result, args) : makeReport(result, args);

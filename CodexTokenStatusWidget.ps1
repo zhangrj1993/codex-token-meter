@@ -21,6 +21,8 @@ function Format-CompactStats($stats) {
   $cost = [double]$stats.estimatedCost.total
   $inputTokens = [double]$stats.summary.input
   $cachedTokens = [double]$stats.summary.cached
+  $primary = $stats.rateLimits.primary
+  $secondary = $stats.rateLimits.secondary
 
   $tokenText = if ($tokens -ge 100000000) {
     "{0:N1}B" -f ($tokens / 1000000000)
@@ -38,10 +40,26 @@ function Format-CompactStats($stats) {
     "0%"
   }
 
+  $primaryText = if ($null -ne $primary) {
+    $reset = if ($primary.resetsAt) { ([datetime]$primary.resetsAt).ToLocalTime().ToString("HH:mm") } else { "--:--" }
+    $remaining = [Math]::Max(0, 100 - [double]$primary.usedPercent)
+    "5h {0:N0}% {1}" -f $remaining, $reset
+  } else {
+    "5h --%"
+  }
+
+  $secondaryText = if ($null -ne $secondary) {
+    $reset = if ($secondary.resetsAt) { ([datetime]$secondary.resetsAt).ToLocalTime().ToString("M/d") } else { "--/--" }
+    $remaining = [Math]::Max(0, 100 - [double]$secondary.usedPercent)
+    "1w {0:N0}% {1}" -f $remaining, $reset
+  } else {
+    "1w --%"
+  }
+
   return [PSCustomObject]@{
     Line1 = "Today $tokenText tokens"
-    Line2 = ("API est. $" + ("{0:N2}" -f $cost) + "  cache $cachePct")
-    Tooltip = ("Codex Token Meter`nToday tokens: $($stats.summary.total.ToString('N0'))`nInput: $($stats.summary.input.ToString('N0'))`nCached input: $($stats.summary.cached.ToString('N0'))`nOutput: $($stats.summary.output.ToString('N0'))`nAPI estimate: $" + ("{0:N4}" -f $cost))
+    Line2 = "$primaryText  $secondaryText"
+    Tooltip = ("Codex Token Meter`nRemaining quota: $primaryText / $secondaryText`nToday tokens: $($stats.summary.total.ToString('N0'))`nInput: $($stats.summary.input.ToString('N0'))`nCached input: $($stats.summary.cached.ToString('N0'))`nOutput: $($stats.summary.output.ToString('N0'))`nAPI estimate: $" + ("{0:N4}" -f $cost) + "`nCache share: $cachePct")
   }
 }
 
